@@ -104,9 +104,10 @@ def propagate(instructions):
             exception_PC,
             exception_flag
         )
-    to_alu_2 = ALU1(to_alu_1, exception_flag)
+    to_alu_2 = ALU1(to_alu_1, exception_flag_next)
 
-    to_alu_1, IQ_next = issue_stage(IQ, exception_flag, forwarding_path)
+    to_alu_1, IQ_next = issue_stage(
+        IQ_next, exception_flag_next, forwarding_path)
 
     DIR_next, free_list_next, busy_bit_table_next, register_map_table_next,\
         physical_rf_next, active_list_next, IQ_next = rename_and_dispatch(
@@ -118,11 +119,12 @@ def propagate(instructions):
             physical_rf_next,
             active_list_next,
             IQ_next,
-            exception_flag,
+            exception_flag_next,
             forwarding_path
         )
+
     PC_next, DIR_next = fetch_and_decode(
-        PC, DIR_next, instructions, exception_flag)
+        PC, DIR_next, instructions, exception_flag_next)
 
     # All units will read the current state of the processor except those that
     # access data structures that can be updated and read in the same cycle
@@ -174,13 +176,13 @@ def dump_state_into_log():
 
 def save_log():
     # Directly from dictionary
-    with open('logs.json', 'a') as outfile:
-        json.dump(logs, outfile)
+    with open('sim_results.json', 'w') as outfile:
+        json.dump(logs, outfile, indent=2)
 
 
 def main():
     # parse JSON to get the program
-    instructions = parse_instruction("test_exception.json")
+    instructions = parse_instruction("test1.json")
     # dump the state of the reset system
     dump_state_into_log()
     # the loop for cycle-by-cycle iterations.

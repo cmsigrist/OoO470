@@ -9,7 +9,7 @@ MAX_COMMIT = 4
 
 
 def fetch_and_decode(PC, DIR, instructions, exception_flag):
-    # if Commit set the exception flag then change PC
+    # if commit set the exception flag then change PC
     if exception_flag:
         PC = 0x10000
         DIR = []
@@ -47,11 +47,13 @@ def rename_and_dispatch(
                 PC = DIR.pop(0)
                 # "addi x1, x0, 1"
                 next_instruction = instructions[PC].split(",")
-                opcode_dest = next_instruction[0].split(" ")
+                opcode_dest = [
+                    i for i in next_instruction[0].split(" ") if i != ""]
+
                 op_code = opcode_dest[0]
 
                 dest = opcode_dest[1][opcode_dest[1].find('x') + 1:]
-                logical_dest = int(dest)  # xi
+                logical_dest = int(dest)  # i of xi
 
                 # init opA
                 op_a = next_instruction[1][next_instruction[1].find(
@@ -62,7 +64,8 @@ def rename_and_dispatch(
                 op_a_value = 0
                 # init opB
                 op_b = next_instruction[2][next_instruction[2].find(
-                    'x') + 1:]
+                    'x') + 1:].strip()
+
                 op_b_reg_tag = 0  # if opB is an imm, no need to have the value
                 op_b_is_ready = False
                 op_b_value = 0
@@ -208,6 +211,8 @@ def commit(
                 if next_op.exception:
                     exception_flag = True
                     exception_PC = next_op.pc
+                    forwarding_path = []
+                    IQ = [] * IQ_LENGTH
                     is_done = False
                 else:
                     # add oldDest to free list in cycle after busy is off
@@ -234,9 +239,6 @@ def commit(
                 busy_bit_table[fp[0].dest_register] = False
             j += 1
     else:  # Exception Mode
-        # reset IQ and Execution stage
-        forwarding_path = []
-        IQ = [] * IQ_LENGTH
         active_list, register_map_table, free_list, busy_bit_table = rollback(
             active_list,
             register_map_table,
@@ -246,7 +248,6 @@ def commit(
 
         if len(active_list) == 0:
             exception_flag = False
-            exception_PC = 0
 
     return active_list, IQ, busy_bit_table, free_list, register_map_table, \
         physical_rf, forwarding_path, exception_PC, exception_flag
