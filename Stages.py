@@ -11,7 +11,6 @@ MAX_COMMIT = 4
 def fetch_and_decode(PC, DIR, instructions, exception_flag):
     # if Commit set the exception flag then change PC
     if exception_flag:
-        # ask about this value
         PC = 0x10000
         DIR = []
     else:
@@ -157,7 +156,7 @@ def ALU1(to_alu_1, exception_flag):
 
 
 def ALU2(to_alu_2, exception_flag, forwarding_path):
-    if not exception_flag:
+    if not exception_flag and to_alu_2:
         for entry in to_alu_2:
             opcode = entry.op_code
             opA = int(entry.op_a_value)
@@ -174,7 +173,7 @@ def ALU2(to_alu_2, exception_flag, forwarding_path):
                 forwarding_path.append((entry, False, result))
             else:
                 if opB == 0:
-                    forwarding_path.append((entry, True, None))
+                    forwarding_path.append((entry, True, 0))
                 else:
                     if opcode == "divu":
                         result = opA / opB
@@ -230,21 +229,15 @@ def commit(
             if next_fp_index >= 0:
                 fp = forwarding_path[next_fp_index]
                 active_list[j].done = True
-                if fp[1]:  # Exception is True
-                    active_list[j].exception = True
-                else:
-                    physical_rf[fp[0].dest_register] = fp[2]
-                    busy_bit_table[fp[0].dest_register] = False
+                active_list[j].exception = fp[1]
+                physical_rf[fp[0].dest_register] = fp[2]
+                busy_bit_table[fp[0].dest_register] = False
             j += 1
     else:  # Exception Mode
         # reset IQ and Execution stage
         forwarding_path = []
         IQ = [] * IQ_LENGTH
-        active_list,
-        register_map_table,
-        free_list,
-        # rollback
-        busy_bit_table = rollback(
+        active_list, register_map_table, free_list, busy_bit_table = rollback(
             active_list,
             register_map_table,
             free_list,
@@ -267,6 +260,7 @@ def rollback(active_list, register_map_table, free_list, busy_bit_table):
         logical_dest = entry_record.logical_dest  # xi in (0, 31)
         # current maps xi in (0, 31) -> (0, 63)
         mapping = register_map_table[logical_dest]
+        print(mapping)
         free_list.append(mapping)  # append back in free_list
         busy_bit_table[mapping] = False
         # restore mapping

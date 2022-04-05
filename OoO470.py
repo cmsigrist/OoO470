@@ -43,8 +43,7 @@ register_map_table_next = [i for i in range(32)]
 def parse_instruction(filename):
     # Opening JSON file
     f = open(filename)
-    # returns JSON object as
-    # a dictionary
+    # returns JSON object as a dictionary
     instructions = json.load(f)
     # Closing file
     f.close()
@@ -52,12 +51,11 @@ def parse_instruction(filename):
 
 
 def no_instruction(instructions):
-    return PC == len(instructions) and len(DIR) == 0 and len(active_list) == 0 and len(IQ) == 0
+    return PC >= len(instructions) and len(DIR) == 0 and \
+        len(active_list) == 0 and len(IQ) == 0
 
 
-# Empty then fill
 def propagate(instructions):
-    # init all states
     global active_list_next
     global busy_bit_table_next
     global DIR_next
@@ -182,7 +180,7 @@ def save_log():
 
 def main():
     # parse JSON to get the program
-    instructions = parse_instruction("test_exception.json")
+    instructions = parse_instruction("test.json")
     # dump the state of the reset system
     dump_state_into_log()
     # the loop for cycle-by-cycle iterations.
