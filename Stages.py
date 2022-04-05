@@ -260,7 +260,6 @@ def rollback(active_list, register_map_table, free_list, busy_bit_table):
         logical_dest = entry_record.logical_dest  # xi in (0, 31)
         # current maps xi in (0, 31) -> (0, 63)
         mapping = register_map_table[logical_dest]
-        print(mapping)
         free_list.append(mapping)  # append back in free_list
         busy_bit_table[mapping] = False
         # restore mapping

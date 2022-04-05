@@ -180,7 +180,7 @@ def save_log():
 
 def main():
     # parse JSON to get the program
-    instructions = parse_instruction("test.json")
+    instructions = parse_instruction("test_exception.json")
     # dump the state of the reset system
     dump_state_into_log()
     # the loop for cycle-by-cycle iterations.
