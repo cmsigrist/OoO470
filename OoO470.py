@@ -14,6 +14,7 @@ MAX_COMMIT = 4
 
 logs = []
 
+# current state
 active_list = [] * ACTIVE_LIST_LENGTH
 busy_bit_table = [False for i in range(BUSY_BIT_TABLE_LENGTH)]
 DIR = [] * DIR_LENGTH
@@ -27,7 +28,7 @@ register_map_table = [i for i in range(32)]
 to_alu_1 = []
 to_alu_2 = []
 
-# next
+# next state
 active_list_next = [] * ACTIVE_LIST_LENGTH
 busy_bit_table_next = [False for i in range(BUSY_BIT_TABLE_LENGTH)]
 DIR_next = [] * DIR_LENGTH
@@ -41,11 +42,8 @@ register_map_table_next = [i for i in range(32)]
 
 
 def parse_instruction(filename):
-    # Opening JSON file
     f = open(filename)
-    # returns JSON object as a dictionary
     instructions = json.load(f)
-    # Closing file
     f.close()
     return instructions
 
@@ -81,10 +79,12 @@ def propagate(instructions):
     physical_rf_next = list(physical_rf)
     register_map_table_next = list(register_map_table)
 
-    forwarding_path = []  # [(entry, exception, result)]
+    forwarding_path = []  # [(Entry, exception, result)]
 
-    # update the value of these copies according to the functionality of all
-    # units -> combinational logic
+    # All units will read the current state of the processor except those that
+    # access data structures that can be updated and read in the same cycle
+
+    # start with ALU2 to have update the forwarding_path
     forwarding_path = ALU2(
         to_alu_2,
         exception_flag,
@@ -126,9 +126,6 @@ def propagate(instructions):
     PC_next, DIR_next = fetch_and_decode(
         PC, DIR_next, instructions, exception_flag_next)
 
-    # All units will read the current state of the processor except those that
-    # access data structures that can be updated and read in the same cycle
-    # (e.g., queues)
     return 0
 
 
@@ -175,14 +172,13 @@ def dump_state_into_log():
 
 
 def save_log():
-    # Directly from dictionary
     with open('sim_results.json', 'w') as outfile:
         json.dump(logs, outfile, indent=2)
 
 
 def main():
     # parse JSON to get the program
-    instructions = parse_instruction("test1.json")
+    instructions = parse_instruction("test.json")
     # dump the state of the reset system
     dump_state_into_log()
     # the loop for cycle-by-cycle iterations.

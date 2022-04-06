@@ -14,7 +14,7 @@ class Entry:
 
     def to_dict(self):
         return {
-            "DestRegister": self.dest_register,  # destination physical register
+            "DestRegister": self.dest_register,
             "OpAIsReady": self.op_a_is_ready,
             "OpARegTag": self.op_a_reg_tag,
             "OpAValue": self.op_a_value,

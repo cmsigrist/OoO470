@@ -6,10 +6,11 @@ IQ_LENGTH = 32
 PHYSICAL_REGISTER_FILE_LENGTH = 64
 DIR_LENGTH = 4
 MAX_COMMIT = 4
+TO_UNSIGNED = 2**64
 
 
 def fetch_and_decode(PC, DIR, instructions, exception_flag):
-    # if commit set the exception flag then change PC
+    # if commit sets the exception flag of current cycle then change PC
     if exception_flag:
         PC = 0x10000
         DIR = []
@@ -45,7 +46,6 @@ def rename_and_dispatch(
                 # rename the instructions decoded from the previous stage and
                 # updated the Register Map Table and Free List accordingly.
                 PC = DIR.pop(0)
-                # "addi x1, x0, 1"
                 next_instruction = instructions[PC].split(",")
                 opcode_dest = [
                     i for i in next_instruction[0].split(" ") if i != ""]
@@ -57,7 +57,7 @@ def rename_and_dispatch(
 
                 # init opA
                 op_a = next_instruction[1][next_instruction[1].find(
-                    'x') + 1:]  # look into mapping then prf
+                    'x') + 1:]
                 # check map
                 op_a_reg_tag = register_map_table[int(op_a)]
                 op_a_is_ready = False
@@ -72,11 +72,13 @@ def rename_and_dispatch(
 
                 # check in busy_bit if opA is ready or not
                 if busy_bit_table[op_a_reg_tag]:
+                    # check in forwarding_path
                     for fp in forwarding_path:
                         if fp[0].dest_register == op_a_reg_tag:
                             op_a_is_ready = True
                             op_a_value = fp[2]
                 else:
+                    # else value is available in prf
                     op_a_value = physical_rf[int(op_a_reg_tag)]
                     op_a_is_ready = True
 
@@ -99,13 +101,13 @@ def rename_and_dispatch(
                     op_b_is_ready = True
 
                 # pop next free
-                dest_register = free_list.pop(0)  # (32, 63)
+                dest_register = free_list.pop(0)  # [32, 63]
                 # set as busy
                 busy_bit_table[int(dest_register)] = True
                 # put the old dest
-                old_dest = register_map_table[int(dest)]  # (0, 31)
+                old_dest = register_map_table[int(dest)]  # [0, 31]
                 # update table with new mapping
-                register_map_table[int(dest)] = dest_register  # (0, 31)
+                register_map_table[int(dest)] = dest_register  # [0, 31]
 
                 # add new Entry to IQ
                 IQ.append(Entry(
@@ -118,7 +120,7 @@ def rename_and_dispatch(
                     op_b_value,
                     op_code,
                     PC))
-                # add next EntryRecord to active list
+                # add new EntryRecord to active list
                 active_list.append(EntryRecord(logical_dest, old_dest, PC))
                 i += 1
             else:  # no free space in the queues
@@ -142,10 +144,10 @@ def issue_stage(IQ, exception_flag, forwarding_path):
                     IQ[j].op_b_is_ready = True
                     IQ[j].op_b_value = fp[2]
 
-                # instruction is ready remove from IQ
+                # instruction is ready -> remove from IQ
             if next_entry.op_a_is_ready and next_entry.op_b_is_ready:
                 to_alu_1.append(next_entry)
-                IQ.pop(j)  # next_entry will still be at index j after pop
+                IQ.pop(j)
                 i += 1
             else:
                 j += 1
@@ -172,9 +174,17 @@ def ALU2(to_alu_2, exception_flag, forwarding_path):
                 result = opA - opB
                 forwarding_path.append((entry, False, result))
             elif opcode == "mulu":
+                if opA < 0:
+                    opA += TO_UNSIGNED
+                if opB < 0:
+                    opB += TO_UNSIGNED
                 result = opA * opB
                 forwarding_path.append((entry, False, result))
             else:
+                if opA < 0:
+                    opA += TO_UNSIGNED
+                if opB < 0:
+                    opB += TO_UNSIGNED
                 if opB == 0:
                     forwarding_path.append((entry, True, 0))
                 else:
@@ -185,7 +195,6 @@ def ALU2(to_alu_2, exception_flag, forwarding_path):
                         result = opA % opB
                         forwarding_path.append((entry, False, result))
 
-    # commit is supposed to update active_list
     return forwarding_path
 
 
@@ -215,7 +224,17 @@ def commit(
                     IQ = [] * IQ_LENGTH
                     is_done = False
                 else:
-                    # add oldDest to free list in cycle after busy is off
+                    # find back the mapping (it may have changed)
+                    # is_last_mapping = False
+                    # m = 1
+                    # mapping = register_map_table[active_list[0].logical_dest]
+                    #  while not is_last_mapping and m < len(active_list):
+                    #     if active_list[m].logical_dest == next_op.logical_dest:
+                    #         mapping = active_list[m].old_dest
+                    #         is_last_mapping = True
+                    #     m += 1
+
+                    # or is it old_dest ?
                     free_list.append(active_list[0].old_dest)
                     active_list.pop(0)
                     i += 1
@@ -258,8 +277,7 @@ def rollback(active_list, register_map_table, free_list, busy_bit_table):
 
     while i < MAX_COMMIT and len(active_list) != 0:
         entry_record = active_list.pop()
-        logical_dest = entry_record.logical_dest  # xi in (0, 31)
-        # current maps xi in (0, 31) -> (0, 63)
+        logical_dest = entry_record.logical_dest
         mapping = register_map_table[logical_dest]
         free_list.append(mapping)  # append back in free_list
         busy_bit_table[mapping] = False
