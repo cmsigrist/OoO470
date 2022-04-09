@@ -84,7 +84,7 @@ def propagate(instructions):
     # All units will read the current state of the processor except those that
     # access data structures that can be updated and read in the same cycle
 
-    # start with ALU2 to have update the forwarding_path
+    # start with ALU2 to update the forwarding_path
     forwarding_path = ALU2(
         to_alu_2,
         exception_flag,

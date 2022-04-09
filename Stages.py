@@ -101,13 +101,13 @@ def rename_and_dispatch(
                     op_b_is_ready = True
 
                 # pop next free
-                dest_register = free_list.pop(0)  # [32, 63]
+                dest_register = free_list.pop(0)
                 # set as busy
                 busy_bit_table[int(dest_register)] = True
                 # put the old dest
-                old_dest = register_map_table[int(dest)]  # [0, 31]
+                old_dest = register_map_table[int(dest)]
                 # update table with new mapping
-                register_map_table[int(dest)] = dest_register  # [0, 31]
+                register_map_table[int(dest)] = dest_register
 
                 # add new Entry to IQ
                 IQ.append(Entry(
@@ -224,17 +224,6 @@ def commit(
                     IQ = [] * IQ_LENGTH
                     is_done = False
                 else:
-                    # find back the mapping (it may have changed)
-                    # is_last_mapping = False
-                    # m = 1
-                    # mapping = register_map_table[active_list[0].logical_dest]
-                    #  while not is_last_mapping and m < len(active_list):
-                    #     if active_list[m].logical_dest == next_op.logical_dest:
-                    #         mapping = active_list[m].old_dest
-                    #         is_last_mapping = True
-                    #     m += 1
-
-                    # or is it old_dest ?
                     free_list.append(active_list[0].old_dest)
                     active_list.pop(0)
                     i += 1
