@@ -6,7 +6,7 @@ e.g if the .json is test.json: <br/>
 ```parse_instruction("test.json")```
 <br/>
 
-To run the simulation run in a terminal:<br/>
+To run the simulation, have python 3.9 installed and run in a terminal:<br/>
 ```python OoO470.py```
 
 The results are available in ```sim_results.json```
